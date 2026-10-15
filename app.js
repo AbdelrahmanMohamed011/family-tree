@@ -12,7 +12,7 @@
   $('person-title').textContent=p.name+(p.star?' ★':'');$('person-branch').textContent=p.branch?'من فرع '+model.branches.get(p.branch).name:'هنا بدأت الحكاية';
   $('person-note').textContent=p.memorial||p.note||'';
   $('person-details').replaceChildren();for(const [key,value] of model.details(p))$('person-details').append(el('dt',key),el('dd',value));
-  const d=$('person-dialog');if(!d.open){if(typeof d.showModal==='function')d.showModal();else d.setAttribute('open','');}
+  $('done-person').textContent=current.view==='birthdays'?'رجوع لأعياد الميلاد':'رجوع للشجرة';const d=$('person-dialog');if(!d.open){if(typeof d.showModal==='function')d.showModal();else d.setAttribute('open','');}
  }
  function closePerson(){const d=$('person-dialog');if(d.open){if(typeof d.close==='function')d.close();else d.removeAttribute('open');}}
  $('close-person').onclick=$('done-person').onclick=closePerson;
@@ -35,17 +35,39 @@
   for(const id of b.children){const p=model.people.get(id),words=p.name.split(' '),a=link(null,'#/branch/'+b.id+'/'+id,'child-option');a.dataset.member=id;a.setAttribute('aria-current',String(id===route.child));a.append(el('strong',words[0]),el('small',words.slice(1).join(' ')));nav.append(a);}
   renderFamily(b.id,route.child);
  }
- function preparePrint(){const ids=current.view==='branch'?[current.branch]:['root',...data.branches.map(b=>b.id)];$('print-area').innerHTML=ids.map(id=>'<section class="print-page">'+window.familyPrint.svg(id,{showShared:current.view==='branch'})+'</section>').join('');}
+ function birthdayOptions(){return {query:$('birthday-search').value,month:$('birthday-month').value,includeDeceased:!!$('birthday-include-deceased').checked};}
+ let birthdayDateKey='';
+ function birthdayWhen(days){return days===0?'النهارده 🎉':days===1?'بكرة':'باقي '+model.year(days)+' يوم';}
+ function renderBirthdays(){
+  const result=model.birthdays(birthdayOptions()),today=result.today;birthdayDateKey=JSON.stringify(today);
+  $('birthday-today').textContent='النهارده '+model.year(today.day)+' '+model.months[today.month-1]+' '+model.year(today.year)+' · بتوقيت مصر';
+  $('birthday-count').textContent=result.found.length?model.year(result.found.length)+' مناسبة · بالترتيب من الأقرب':'مفيش مناسبات مطابقة للبحث أو الشهر المختار.';
+  $('clear-birthday-search').hidden=!$('birthday-search').value;
+  const list=$('birthday-list');list.replaceChildren();
+  for(const item of result.found){
+   const p=item.person,card=el('article',null,'birthday-card'+(item.days===0?' is-today':''));card.dataset.person=p.id;
+   const date=el('div',null,'birthday-date');date.append(el('strong',model.year(p.birthDay)),el('span',model.months[p.birthMonth-1]));
+   const info=el('div',null,'birthday-info'),button=el('button',p.name,'birthday-name');button.type='button';button.setAttribute('aria-label','عرض بيانات '+p.name);button.onclick=()=>showPerson(p.id);
+   info.append(button,el('small',model.context(p)));
+   if(p.deceased)info.append(el('span','ذكرى الميلاد · '+(p.memorial||'رحمه الله'),'birthday-age'));
+   else if(item.age!==null)info.append(el('span',(item.days===0?'بيتمّ ':'هيتمّ ')+model.year(item.age)+' سنة','birthday-age'));
+   card.append(date,info,el('span',p.deceased?(item.days===0?'ذكرى ميلاده النهارده':birthdayWhen(item.days)):birthdayWhen(item.days),'birthday-countdown'));list.append(card);
+  }
+  $('birthday-missing').hidden=!result.missing.length;
+  $('birthday-missing-title').textContent='تواريخ لسه ناقصة ('+model.year(result.missing.length)+')';
+  $('birthday-missing-list').replaceChildren();for(const p of result.missing){const b=el('button',p.name+' · '+model.context(p),'missing-person');b.type='button';b.onclick=()=>showPerson(p.id);$('birthday-missing-list').append(b);}
+ }
+ function preparePrint(){if(current.view==='birthdays'){$('print-area').innerHTML=window.familyPrint.birthdays(model.birthdays(birthdayOptions()));return;}const ids=current.view==='branch'?[current.branch]:['root',...data.branches.map(b=>b.id)];$('print-area').innerHTML=ids.map(id=>'<section class="print-page">'+window.familyPrint.svg(id,{showShared:current.view==='branch'})+'</section>').join('');}
  function renderWholeTree(){const container=$('all-trees');container.replaceChildren();fillPair($('tree-roots'),['K','KS'],false,true);for(const b of data.branches){const section=el('section',null,'tree-sheet'),head=el('div',null,'tree-sheet-head');head.append(el('h2','فرع '+b.name),link('افتح الفرع','#/branch/'+b.id));section.append(head,el('p','اسحب الشجرة يمين وشمال لقراءة الأسماء.','tree-scroll-hint'));const drawing=el('div',null,'svg-scroll');drawing.tabIndex=0;drawing.setAttribute('aria-label','شجرة فرع '+b.name);drawing.innerHTML=window.familyPrint.svg(b.id,{showShared:false});section.append(drawing);container.append(section);}}
  function applyRoute(initial=false){
   const previous=current;current=model.parseRoute(location.hash);closePerson();
-  for(const view of ['home','branch','tree'])$(view+'-view').hidden=current.view!==view;
-  $('navigation').hidden=current.view==='home';$('branch-select').value=current.branch||'';
-  $('print-button').textContent=current.view==='branch'?'طباعة الفرع':'طباعة العائلة';
-  if(current.view==='branch')renderBranch(current);else if(current.view==='tree')renderWholeTree();
-  document.title=current.view==='branch'?'عيلتنا — فرع '+model.branches.get(current.branch).name:current.view==='tree'?'عيلتنا — العائلة كاملة':'عيلتنا — عائلة خيرات وفتحي';
+  for(const view of ['home','branch','tree','birthdays'])$(view+'-view').hidden=current.view!==view;
+  $('navigation').hidden=current.view==='home';$('global-search-section').hidden=current.view==='birthdays';$('branch-select').value=current.branch||'';
+  $('print-button').textContent=current.view==='birthdays'?'طباعة القائمة':current.view==='branch'?'طباعة الفرع':'طباعة العائلة';
+  if(current.view==='branch')renderBranch(current);else if(current.view==='tree')renderWholeTree();else if(current.view==='birthdays')renderBirthdays();
+  document.title=current.view==='birthdays'?'عيلتنا — أعياد الميلاد':current.view==='branch'?'عيلتنا — فرع '+model.branches.get(current.branch).name:current.view==='tree'?'عيلتنا — العائلة كاملة':'عيلتنا — عائلة خيرات وفتحي';
   preparePrint();
-  if(!initial){$('family-search').value='';renderSearch();const target=current.view==='branch'&&previous.view==='branch'&&previous.branch===current.branch?$('family-title'):$(current.view==='home'?'home-title':current.view==='tree'?'tree-title':'branch-title');target.focus({preventScroll:true});if(!current.person)target.scrollIntoView({behavior:'auto',block:'start'});}
+  if(!initial){$('family-search').value='';renderSearch();const target=current.view==='branch'&&previous.view==='branch'&&previous.branch===current.branch?$('family-title'):$(current.view==='home'?'home-title':current.view==='tree'?'tree-title':current.view==='birthdays'?'birthdays-title':'branch-title');target.focus({preventScroll:true});if(!current.person)target.scrollIntoView({behavior:'auto',block:'start'});}
   if(current.person)showPerson(current.person);
  }
  function renderSearch(){
@@ -63,5 +85,14 @@
  $('type-size').onclick=()=>{const large=document.body.classList.toggle('large-type');$('type-size').setAttribute('aria-pressed',String(large));$('type-size').textContent=large?'حجم الخط العادي':'تكبير الخط أ+';};
  $('print-button').onclick=()=>{preparePrint();window.print();};
  window.addEventListener('beforeprint',preparePrint);window.addEventListener('hashchange',()=>applyRoute());
+ for(let i=0;i<model.months.length;i++){const option=el('option',model.months[i]);option.value=String(i+1);$('birthday-month').append(option);}
+ $('birthday-search').addEventListener('input',renderBirthdays);
+ $('birthday-month').addEventListener('change',renderBirthdays);
+ $('birthday-include-deceased').addEventListener('change',renderBirthdays);
+ $('clear-birthday-search').onclick=()=>{$('birthday-search').value='';renderBirthdays();$('birthday-search').focus();};
+ $('birthday-search').addEventListener('keydown',e=>{if(e.key==='Escape')$('clear-birthday-search').onclick();});
+ window.addEventListener('focus',()=>{if(current.view==='birthdays')renderBirthdays();});
+ window.addEventListener('pageshow',()=>{if(current.view==='birthdays')renderBirthdays();});
+ if(window.setInterval)window.setInterval(()=>{if(current.view==='birthdays'&&birthdayDateKey!==JSON.stringify(model.today()))renderBirthdays();},60000);
  applyRoute(true);document.body.classList.add('app-ready');
 })();
