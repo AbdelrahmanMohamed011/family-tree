@@ -36,7 +36,7 @@
    const first=x+gap/2,second=x-gap/2-w;
    person(ids[0],first,y,w,h,{root,compact:!root});person(ids[1],second,y,w,h,{root,compact:!root});
    art.push(`<path d="M${x-gap/2} ${y+52}H${x+gap/2}" fill="none" stroke="${C.twig}" stroke-width="1.4"/>`);
-   if(model.people.get(ids[0]).spouseId===ids[1])nodes.push(`<path d="M${x} ${y+59}C${x-16} ${y+49} ${x-8} ${y+38} ${x} ${y+45}C${x+8} ${y+38} ${x+16} ${y+49} ${x} ${y+59}Z" fill="#a56754"/>`);
+   if(model.areSpouses(ids[0],ids[1]))nodes.push(`<path d="M${x} ${y+59}C${x-16} ${y+49} ${x-8} ${y+38} ${x} ${y+45}C${x+8} ${y+38} ${x+16} ${y+49} ${x} ${y+59}Z" fill="#a56754"/>`);
   }
   const houses=b.children.map(id=>{const h=overview?{parents:[id,model.branches.get(id).partner],children:[]}:model.householdFor(id),parents=[id,...h.parents.filter(p=>p!==id)],rows=mobile?h.children.length:Math.ceil(h.children.length/2);return {id,parents,kids:h.children,rows,top:rows?rows*78+32:58,half:mobile?137:168,y:0,x:0};});
   let rootY,H;
@@ -84,8 +84,15 @@
   const label=overview?'هنا بدأت الحكاية':'من جذور خيرات وفتحي';
   nodes.push(text(mobile?180:cx,H-36,label,21,C.muted,false,true));
   if(!mobile)nodes.push(text(W/2,46,overview?'عائلة خيرات وفتحي':'فرع '+b.name,25,C.ink,true,true));
+  const extras=overview?[]:b.children.flatMap(id=>model.otherSpouses(id).map(spouse=>({id,spouse})));
+  const finalH=H+(extras.length?(mobile?extras.length*220+80:255):0);
+  if(extras.length){
+   art.push(`<rect x="12" y="${H+3}" width="${W-24}" height="${finalH-H-15}" rx="12" fill="#ebe7d9" stroke="#b9bea4"/>`);
+   nodes.push(text(W/2,H+34,'زواج آخر · دون أبناء مشتركين',15,C.muted));
+   extras.forEach(({id,spouse},i)=>{const x=mobile?W/2:W/2+(extras.length-1)*150-i*300,y=H+88+(mobile?i*220:0);nodes.push(text(x,y-17,'زوجة '+model.people.get(id).name,14,C.muted));person(spouse,x-110,y,220,124,{compact:true});});
+  }
   const style=`.olive-person{cursor:${interactive?'pointer':'default'}}.olive-person:focus{outline:none}.olive-person:focus .olive-surface{stroke:#3e652d;stroke-width:3}.olive-person:hover .olive-surface{fill:#c4d5a6}.olive-person text{pointer-events:none}`;
-  const result=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="${interactive?'group':'img'}" aria-label="شجرة ${overview?'عائلة خيرات وفتحي':'فرع '+esc(b.name)}" class="olive-tree-svg"><style>${style}</style><rect width="100%" height="100%" fill="${C.paper}"/>${art.join('')}${nodes.join('')}</svg>`;
+  const result=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${finalH}" viewBox="0 0 ${W} ${finalH}" role="${interactive?'group':'img'}" aria-label="شجرة ${overview?'عائلة خيرات وفتحي':'فرع '+esc(b.name)}" class="olive-tree-svg"><style>${style}</style><rect width="100%" height="100%" fill="${C.paper}"/>${art.join('')}${nodes.join('')}</svg>`;
   return result;
  }
  function birthdays({found,today}){

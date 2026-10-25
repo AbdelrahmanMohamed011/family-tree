@@ -6,7 +6,7 @@
  function link(text,href,cls){const a=el('a',text,cls);a.href=href;return a;}
  function heart(){const m=el('span',null,'marriage');m.setAttribute('aria-hidden','true');m.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 21S2 14.6 2 7.5C2 2.7 8.1 1.4 12 6c3.9-4.6 10-3.3 10 1.5C22 14.6 12 21 12 21Z"/></svg>';return m;}
  function person(id){const p=model.people.get(id),b=el('button',null,'person');b.type='button';b.dataset.person=id;b.setAttribute('aria-label','عرض بيانات '+p.name);const title=el('span',p.name,'person-name');if(p.star)title.append(el('span','★','star'));b.append(title);if(p.memorial||p.note)b.append(el('span',p.memorial||p.note,'sub'));b.onclick=()=>showPerson(id);return b;}
- function fillPair(node,ids,children=false,root=false){const married=ids.length===2&&model.people.get(ids[0]).spouseId===ids[1];node.replaceChildren();node.className='pair'+(ids.length===1?' single':'')+(children?' has-children':'')+(root?' root-pair':'')+(ids.length===2&&!married?' co-parents':'');ids.forEach((id,i)=>{if(i){const connector=married?heart():el('span',null,'marriage');connector.setAttribute('aria-hidden','true');node.append(connector);}node.append(person(id));});}
+ function fillPair(node,ids,children=false,root=false){const married=ids.length===2&&model.areSpouses(ids[0],ids[1]);node.replaceChildren();node.className='pair'+(ids.length===1?' single':'')+(children?' has-children':'')+(root?' root-pair':'')+(ids.length===2&&!married?' co-parents':'');ids.forEach((id,i)=>{if(i){const connector=married?heart():el('span',null,'marriage');connector.setAttribute('aria-hidden','true');node.append(connector);}node.append(person(id));});}
  function showPerson(id){
   const p=model.people.get(id);if(!p)return;lastFocus=document.activeElement;
   $('person-title').textContent=p.name+(p.star?' ★':'');$('person-branch').textContent=p.branch?'من فرع '+model.branches.get(p.branch).name:'هنا بدأت الحكاية';
@@ -25,6 +25,9 @@
   fillPair($('couple'),[member,...h.parents.filter(id=>id!==member)],h.children.length>0);
   $('descendants').replaceChildren();
   if(h.children.length){const tree=el('div',null,'desc-tree'),grid=el('div',null,'grandchildren');grid.style.setProperty('--count',h.children.length);for(const id of h.children){const wrap=el('div',null,'grandchild-wrap');wrap.append(person(id));grid.append(wrap);}tree.append(grid);$('descendants').append(tree);}
+  const origin=$('family-origin-note');origin.textContent=h.parents.length===1&&h.children.length?'الأم: '+model.people.get(h.children[0]).mother:'';origin.hidden=!origin.textContent;
+  const additional=$('additional-marriages');additional.replaceChildren();additional.hidden=!h.otherSpouses.length;
+  for(const spouse of h.otherSpouses){const section=el('section',null,'additional-marriage'),pair=el('div');section.append(el('h3','زواج آخر'));fillPair(pair,[member,spouse],false);section.append(pair,el('p','لا يوجد أبناء مشتركون.','tap-hint'));additional.append(section);}
   const shared=model.sharedBranch(member,branch),note=$('shared-family');note.replaceChildren();note.hidden=!shared;
   if(shared){note.append(el('span','أسرة مشتركة مع فرع '+shared.branch.name),link('عرضها في فرع '+shared.branch.name,'#/branch/'+shared.branch.id+'/'+shared.person.id));}
  }
