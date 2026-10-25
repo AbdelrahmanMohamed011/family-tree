@@ -274,4 +274,13 @@ body.large-type .olive-crown{display:none}body.large-type .olive-column{display:
 @media(prefers-reduced-motion:reduce){.olive-person,.branch-card{transition:none}}
 @media print{.print-page svg{max-height:264mm;width:100%;height:auto}.print-page{background:var(--cream)}.birthday-print{font-family:var(--body)}.birthday-print h1{font-family:var(--display);font-size:32px}.birthday-print th,.birthday-print td{font-size:12px}.olive-person{cursor:default}}
 
-.family-origin-note{color:var(--muted);margin:0 0 16px;font-size:16px}.additional-marriage{margin-top:28px;padding:24px 16px;border:1px solid #c9cbb8;background:#eeeadd;border-radius:10px}.additional-marriage h3{text-align:center;font-size:25px;margin-bottom:20px}
+.family-origin-note{color:var(--muted);margin:0 0 16px;font-size:16px}
+.pair.three{grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr) 32px minmax(0,1fr);width:min(100%,780px)}
+.family-panel.multi-marriage{max-width:780px;margin-inline:auto}
+.family-panel.multi-marriage .pair{width:100%}
+.pair.has-children::after{left:var(--child-anchor,50%)}
+.desc-tree.offcenter::before{left:var(--child-anchor)}
+.desc-tree.offcenter::after{content:'';position:absolute;top:29px;left:50%;width:calc(var(--child-anchor) - 50%);height:2px;background:#9a866b}
+.desc-tree.offcenter.is-left::after{left:var(--child-anchor);width:calc(50% - var(--child-anchor))}
+@media(max-width:760px){.desc-tree.offcenter::after{top:28px;left:var(--child-anchor);right:14px;width:auto;height:30px;background:none;border-top:2px solid #9a866b;border-right:2px solid #9a866b}.pair.three{grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr) 18px minmax(0,1fr)}.pair.three .person-name{font-size:20px}.pair.three .person .sub{font-size:10px}}
+@media(max-width:760px){.desc-tree.offcenter.is-left::after{width:auto}}
