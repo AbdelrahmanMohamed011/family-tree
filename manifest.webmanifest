@@ -1,0 +1,16 @@
+{
+  "name": "عيلتنا — عائلة خيرات وفتحي",
+  "short_name": "عيلتنا",
+  "description": "شجرة عائلة خيرات وفتحي، أعياد الميلاد، وصلة القرابة.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4efe2",
+  "theme_color": "#f4efe2",
+  "icons": [
+    {"src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png"},
+    {"src": "favicon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

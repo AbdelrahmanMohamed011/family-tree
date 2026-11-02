@@ -1,10 +1,11 @@
 /* Olive tree geometry adapted from the user's reference, with canonical family data.
-   Deterministic SVG works in the screen, offline copy and vector print output. */
+   Deterministic SVG works in the screen, offline copy and vector print output.
+   Colours come from work/design-tokens.json (via data.js), the same palette as the A0 poster. */
 (() => {
  'use strict';
  const data=window.FAMILY,model=window.familyModel;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const C={paper:'#f3efe4',raised:'#fbf9f3',canopy:'#e5e9d7',leaf:'#d5dfbc',edge:'#869b68',ink:'#282a20',muted:'#656654',bark:'#68563f',twig:'#897457',soil:'#e0d6bf',fruit:'#483044',memorial:'#9a5945'};
+ const T=data.theme||{},C={paper:T.paper||'#f4efe2',raised:T.card||'#fcfaf2',rootCard:T.rootCard||'#ece6d3',cardEdge:T.cardEdge||'#b6c19c',shadow:T.cardShadow||'#e4dcc6',canopy:T.canopy||'#e2e9d1',canopyDeep:T.canopyDeep||'#d8e1c3',leaf:T.leaf||'#dae4c0',leafHover:T.leafHover||'#c6d6a5',edge:T.leafEdge||'#8ea16d',ink:T.ink||'#27301f',muted:T.muted||'#646d58',bark:T.bark||'#735b3f',twig:T.barkLight||'#a68d69',stem:T.stem||'#86935f',soil:T.soil||'#e1d6bc',fruit:T.fruit||'#4b3a4a',memorial:T.memorial||'#955a42',heart:T.heart||'#a8664f',green:T.green||'#4b693a',greenDeep:T.greenDeep||'#36502b',goldSoft:T.goldSoft||'#d9cba4'};
  const fmt=p=>p.map(v=>v.toFixed(1)).join(' ');
  function spline(points,per=14){const out=[];for(let i=0;i<points.length-1;i++){const p0=points[i-1]||points[i],p1=points[i],p2=points[i+1],p3=points[i+2]||p2;for(let s=0;s<per;s++){const t=s/per,t2=t*t,t3=t2*t;out.push([0,1].map(k=>.5*(2*p1[k]+(p2[k]-p0[k])*t+(2*p0[k]-5*p1[k]+4*p2[k]-p3[k])*t2+(3*p1[k]-p0[k]-3*p2[k]+p3[k])*t3)));}}out.push(points[points.length-1]);return out;}
  function taper(points,w0,w1){const samples=spline(points),left=[],right=[];samples.forEach((p,i)=>{const a=samples[Math.max(0,i-1)],b=samples[Math.min(samples.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,w=(w0+(w1-w0)*Math.pow(i/(samples.length-1),.75))/2;left.push([p[0]-dy/len*w,p[1]+dx/len*w]);right.push([p[0]+dy/len*w,p[1]-dx/len*w]);});return 'M'+left.map(fmt).join('L')+'L'+right.reverse().map(fmt).join('L')+'Z';}
@@ -16,13 +17,13 @@
   const art=[],nodes=[],regions=[];
   const text=(x,y,value,size=20,color=C.ink,bold=false,display=false,dir='rtl')=>`<text x="${x}" y="${y}" text-anchor="middle" direction="${dir}" font-family="${display?'Aref Ruqaa':'IBM Plex Sans Arabic'},Tahoma,serif" font-size="${size*font}" fill="${color}" font-weight="${bold?700:400}">${esc(value)}</text>`;
   const bark=(points,w0=13,w1=4,color=C.bark)=>art.push(`<path d="${taper(points,w0,w1)}" fill="${color}"/>`);
-  const deco=(x,y,angle=-45)=>art.push(`<path d="${lens(x,y,27,9,angle)}" fill="${C.leaf}" stroke="${C.edge}" stroke-width=".8"/>`);
+  const deco=(x,y,angle=-45)=>art.push(`<path d="${lens(x,y,27,9,angle)}" fill="${C.leafHover}" stroke="${C.edge}" stroke-width=".8"/>`);
   const olives=(x,y)=>art.push(`<g fill="${C.fruit}"><ellipse cx="${x+6}" cy="${y}" rx="4" ry="6" transform="rotate(15 ${x+6} ${y})"/><ellipse cx="${x-5}" cy="${y+4}" rx="4" ry="6" transform="rotate(-15 ${x-5} ${y+4})"/></g>`);
   const outline=(x,y,w,h)=>`M${x} ${y+h*.5}C${x+w*.13} ${y-h*.13} ${x+w*.75} ${y-h*.09} ${x+w} ${y+h*.5}C${x+w*.75} ${y+h*1.09} ${x+w*.13} ${y+h*1.13} ${x} ${y+h*.5}Z`;
   function person(id,x,y,w,h,{leaf=false,root=false,compact=false}={}){
    const p=model.people.get(id),tag=interactive?'a':'g',attrs=interactive?` href="${esc(model.routeFor(id,true))}" tabindex="0" aria-label="عرض بيانات ${esc(p.name)}"`:'';
    let out=`<${tag} data-person="${id}" class="olive-person${leaf?' olive-leaf':''}"${attrs}><title>${esc(p.name)}${p.note?' · '+esc(p.note):''}</title>`;
-   out+=leaf?`<path class="olive-surface" d="${outline(x,y,w,h)}" fill="${C.leaf}" stroke="${C.edge}" stroke-width="1"/>`:`<rect class="olive-surface" x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${root?'#ece8da':C.raised}" stroke="#c9c7b5"/>`;
+   out+=leaf?`<path class="olive-surface" d="${outline(x,y,w,h)}" fill="${C.leaf}" stroke="${C.edge}" stroke-width="1"/>`:`<rect x="${x}" y="${y+4}" width="${w}" height="${h}" rx="14" fill="${C.shadow}"/><rect class="olive-surface" x="${x}" y="${y}" width="${w}" height="${h}" rx="14" fill="${root?C.rootCard:C.raised}" stroke="${C.cardEdge}" stroke-width="1.4"/>`;
    const long=!leaf||p.name.length>13,words=p.name.split(' '),lines=long&&words.length>1?[words[0],words.slice(1).join(' ')]:[p.name];
    const size=leaf?17:compact?23:26,top=leaf?(lines.length===2?27:34):(lines.length===2?40:54);
    lines.forEach((v,i)=>{const secondary=!leaf&&i>0;out+=text(x+w/2,y+top+i*(leaf?18:33),v,secondary?14:size,C.ink,!leaf&&!secondary,!leaf&&!secondary);});
@@ -39,19 +40,19 @@
    for(let i=1;i<ids.length;i++){
     const mid=(centers[i-1]+centers[i])/2;
     art.push(`<path d="M${mid-gap/2} ${y+52}H${mid+gap/2}" fill="none" stroke="${C.twig}" stroke-width="1.4"/>`);
-    if(model.areSpouses(ids[i-1],ids[i]))nodes.push(`<path d="M${mid} ${y+59}C${mid-16} ${y+49} ${mid-8} ${y+38} ${mid} ${y+45}C${mid+8} ${y+38} ${mid+16} ${y+49} ${mid} ${y+59}Z" fill="#a56754"/>`);
+    if(model.areSpouses(ids[i-1],ids[i]))nodes.push(`<path d="M${mid} ${y+59}C${mid-16} ${y+49} ${mid-8} ${y+38} ${mid} ${y+45}C${mid+8} ${y+38} ${mid+16} ${y+49} ${mid} ${y+59}Z" fill="${C.heart}"/>`);
    }
   }
   const houses=b.children.map(id=>{const h=overview?{parents:[id,model.branches.get(id).partner],children:[],otherSpouses:[]}:model.householdFor(id),familyParents=[id,...h.parents.filter(p=>p!==id)],parents=familyParents.length===2&&h.otherSpouses.length?[...h.otherSpouses,id,familyParents[1]]:[...familyParents,...h.otherSpouses],rows=mobile?h.children.length:Math.ceil(h.children.length/2);return {id,parents,ancestryOffset:parents.length===3?0:parents.length>1?69:0,childAnchor:h.otherSpouses.length?familyParents.length===2?-69:69:null,kids:h.children,rows,top:rows?rows*78+32:58,half:mobile?hasOther?205:137:parents.length===3?205:168,y:0,x:0};});
   let rootY,H;
-  if(mobile){let top=30;for(const h of houses){h.x=hasOther?W/2-27:153;h.y=top+h.top;top=h.y+124+80;}rootY=top+15;H=rootY+266;}
+  if(mobile){let top=30;for(const h of houses){h.x=hasOther?W/2-27:153;h.y=top+h.top;top=h.y+124+80;}rootY=top+15;H=rootY+266+(overview?0:34);}
   else{
    const step=(W-380)/Math.max(1,houses.length-1);
    houses.forEach((h,i)=>{h.x=W/2+(houses.length-1)*step/2-i*step;h.y=i%2===0?35*Math.pow((h.x-W/2)/(W/2),2):0;});
    const lowerTop=Math.min(...houses.filter((_,i)=>i%2===0).map(h=>h.y-h.top));
    houses.forEach((h,i)=>{if(i%2)h.y=lowerTop-165;});
    const min=Math.min(...houses.map(h=>h.y-h.top)),dy=75-min;
-   houses.forEach(h=>h.y+=dy);rootY=Math.max(...houses.map(h=>h.y+124))+185;H=rootY+271;
+   houses.forEach(h=>h.y+=dy);rootY=Math.max(...houses.map(h=>h.y+124))+185;H=rootY+271+(overview?0:34);
   }
   // A soft olive canopy; each family grows on a separate, traceable bough.
   if(!mobile)art.push(`<ellipse cx="${W/2}" cy="${(rootY-150)/2}" rx="${W/2-18}" ry="${(rootY-150)/2-15}" fill="${C.canopy}"/>`);
@@ -79,16 +80,17 @@
    // On the outside branch, attach the ancestry line to the family member only.
    pair(h.parents,h.x,h.y);
    const stemX=mobile?h.x+99:h.childAnchor!=null?h.x+h.childAnchor:h.x,stemTop=h.y-h.top+14;
-   if(h.kids.length){bark([[h.childAnchor!=null?h.x+h.childAnchor:h.x,h.y+2],[stemX,h.y-12],[stemX,stemTop]],4,1.3,C.twig);}
+   if(h.kids.length){bark([[h.childAnchor!=null?h.x+h.childAnchor:h.x,h.y+2],[stemX,h.y-12],[stemX,stemTop]],4,1.3,C.stem);}
    else {deco(h.x,h.y-6,-128);deco(h.x+2,h.y-5,-52);}
    h.kids.forEach((id,k)=>{const row=mobile?k:Math.floor(k/2),right=!mobile&&k%2===0,y=h.y-37-row*78-35,w=mobile?212:155,x=mobile?stemX-w-3:right?stemX+3:stemX-w-3;person(id,x,y,w,70,{leaf:true});});
    if(h.kids.length){deco(stemX,stemTop+3,-97);olives(stemX+7,stemTop+15);}
   });
   pair([b.id,b.partner],mobile?W/2:cx,rootY,{root:true});
+  if(!overview){const px=mobile?W/2:cx,pw=Math.max(190,b.name.length*17+90);nodes.push(`<g class="olive-plaque"><rect x="${px-pw/2}" y="${rootY+146}" width="${pw}" height="50" rx="25" fill="${C.greenDeep}"/><rect x="${px-pw/2}" y="${rootY+142}" width="${pw}" height="50" rx="25" fill="${C.green}"/>${text(px,rootY+176,'فرع '+b.name,22,C.raised,true,true)}</g>`);}
   const label=overview?'هنا بدأت الحكاية':'من جذور خيرات وفتحي';
   nodes.push(text(mobile?W/2:cx,H-36,label,21,C.muted,false,true));
-  if(!mobile)nodes.push(text(W/2,46,overview?'عائلة خيرات وفتحي':'فرع '+b.name,25,C.ink,true,true));
-  const style=`.olive-person{cursor:${interactive?'pointer':'default'}}.olive-person:focus{outline:none}.olive-person:focus .olive-surface{stroke:#3e652d;stroke-width:3}.olive-person:hover .olive-surface{fill:#c4d5a6}.olive-person text{pointer-events:none}`;
+  if(!mobile&&!interactive)nodes.push(text(W/2,46,overview?'عائلة خيرات وفتحي':'فرع '+b.name,25,C.ink,true,true));
+  const style=`.olive-person{cursor:${interactive?'pointer':'default'}}.olive-person:focus{outline:none}.olive-person:focus .olive-surface{stroke:${C.green};stroke-width:3}.olive-person:hover .olive-surface{fill:${C.leafHover}}.olive-person text{pointer-events:none}`;
   const result=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="${interactive?'group':'img'}" aria-label="شجرة ${overview?'عائلة خيرات وفتحي':'فرع '+esc(b.name)}" class="olive-tree-svg"><style>${style}</style><rect width="100%" height="100%" fill="${C.paper}"/>${art.join('')}${nodes.join('')}</svg>`;
   return result;
  }
